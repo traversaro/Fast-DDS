@@ -2,7 +2,7 @@
 <dds xmlns="http://www.eprosima.com" >
     <profiles>
         <participant profile_name="xtypes_participant_profile" is_default_profile="true">
-            <domainId>47</domainId>
+            <domainId>57</domainId>
             <rtps>
                 <name>xtypes_participant</name>
                 <propertiesPolicy>
