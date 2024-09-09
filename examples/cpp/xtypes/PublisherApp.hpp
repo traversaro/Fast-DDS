@@ -99,6 +99,12 @@ private:
 
     int16_t matched_;
 
+    int16_t discriminator_value;
+
+    int string_index;
+
+    MemberId discriminator_id;
+
     uint16_t samples_;
 
     std::mutex mutex_;

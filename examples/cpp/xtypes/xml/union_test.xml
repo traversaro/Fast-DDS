@@ -1,0 +1,16 @@
+<types>
+        <type>
+            <union name="HelloWorld">
+                <discriminator type="int16"/>
+                <case>
+                    <caseDiscriminator value="0"/>
+                    <member name="index" type="uint32"/>
+                </case>
+                <case>
+                    <caseDiscriminator value="1"/>
+                    <caseDiscriminator value="default"/>
+                    <member name="message" type="string"/>
+                </case>
+            </union>
+        </type>
+</types>

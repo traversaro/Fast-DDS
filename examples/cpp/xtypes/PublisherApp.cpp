@@ -77,7 +77,6 @@ PublisherApp::PublisherApp(
     }
 
     hello_->set_uint32_value(hello_->get_member_id_by_name("index"), 0);
-    hello_->set_string_value(hello_->get_member_id_by_name("message"), "Hello xtypes world");
 
     // Register the type
     TypeSupport type(new DynamicPubSubType(dynamic_type));
@@ -162,25 +161,51 @@ void PublisherApp::on_publication_matched(
 
 void PublisherApp::run()
 {
-    uint32_t index = get_uint32_value(hello_, "index");
-    std::string message = get_string_value(hello_, "message");
+    discriminator_value = 0;
+    string_index = 0;
+    discriminator_id = hello_->get_member_id_by_name("discriminator");
+    hello_->set_int16_value(discriminator_id, discriminator_value);
+    hello_->set_uint32_value(hello_->get_member_id_by_name("index"), 0);
 
-    while (!is_stopped() && ((samples_ == 0) || (index < samples_)))
+    while (!is_stopped() && ((samples_ == 0)))
     {
+        // __FLAG__
+        DynamicTypeMembersByName members;
+        hello_->type()->get_all_members_by_name(members);
+        for (auto member : members)
+        {
+            ObjectName name = member.first;
+            MemberDescriptor::_ref_type member_descriptor = traits<MemberDescriptor>::make_shared();
+            member.second->get_descriptor(member_descriptor);
+            MemberId member_id = member.second->get_id();
+            UnionCaseLabelSeq labels = member_descriptor->label();
+            std::cout << "Member: " << name << std::endl;
+            std::cout << "Member ID: " << member_id << std::endl;
+            for (auto label : labels)
+            {
+                std::cout << "Label: " << label << std::endl;
+            }
+        }
+        /////////////////////////////////////
+
         if (publish())
         {
-            // Retrieve the new index and message
-            index = get_uint32_value(hello_, "index");
-            message = get_string_value(hello_, "message");
-
-            std::cout << "Message sent:" << std::endl;
-            std::cout << "  - index: " << index << std::endl;
-            std::cout << "  - message: '" << message << "'" << std::endl;
+            // // Retrieve the new index and message
+            if (discriminator_value == 0)
+            {
+                uint32_t index = get_uint32_value(hello_, "index");
+                std::cout << "Message sent with index " << index << std::endl;
+            }
+            else if (discriminator_value == 1)
+            {
+                std::string message = get_string_value(hello_, "message");
+                std::cout << "Message sent: '" << message << "'" << std::endl;
+            }
         }
         else if (!is_stopped())
         {
-            index = get_uint32_value(hello_, "index");
-            std::cout << "Error sending message with index" << index << std::endl;
+            // index = get_uint32_value(hello_, "index");
+            // std::cout << "Error sending message with index" << index << std::endl;
         }
 
         // Wait for period or stop event
@@ -203,14 +228,25 @@ bool PublisherApp::publish()
     cv_.wait(matched_lock, [&]()
             {
                 // at least one has been discovered
-                return ((matched_ > 0) || is_stopped());
+                return ((matched_ >= 0) || is_stopped());
             });
 
     if (!is_stopped())
     {
+        discriminator_value = (discriminator_value + 1) % 2;
+        hello_->set_int16_value(discriminator_id, discriminator_value);
+        if (discriminator_value == 0)
+        {
+            uint32_t index = get_uint32_value(hello_, "index");
+            set_uint32_value(hello_, "index", index);
+        }
+        else if (discriminator_value == 1)
+        {
+            hello_->set_string_value(hello_->get_member_id_by_name("message"), "Message " + std::to_string(string_index++));
+        }
         // Increase the index by 1
-        uint32_t index = get_uint32_value(hello_, "index");
-        set_uint32_value(hello_, "index", index);
+        // uint32_t index = get_uint32_value(hello_, "index");
+        // set_uint32_value(hello_, "index", index);
 
         // Publish the sample
         ret = (RETCODE_OK == writer_->write(&hello_));
@@ -235,6 +271,7 @@ DynamicType::_ref_type PublisherApp::create_type(
     DynamicTypeBuilder::_ref_type struct_builder;
     if (use_xml_type)
     {
+        DomainParticipantFactory::get_instance()->load_XML_profiles_file("/home/carlos-espinoza/fastdds-visualizer-plugin/src/fastdds/examples/cpp/xtypes/xml/union_test.xml");
         // Retrieve the type builder from xml
         if (RETCODE_OK !=
                 DomainParticipantFactory::get_instance()->get_dynamic_type_builder_from_xml_by_name("HelloWorld",
@@ -258,7 +295,7 @@ DynamicType::_ref_type PublisherApp::create_type(
 
         // Add index member
         MemberDescriptor::_ref_type index_member_descriptor {traits<MemberDescriptor>::make_shared()};
-        index_member_descriptor->name("index");
+        // index_member_descriptor->name("index");
         index_member_descriptor->type(DynamicTypeBuilderFactory::get_instance()->get_primitive_type(TK_UINT32));
 
         if (RETCODE_OK != struct_builder->add_member(index_member_descriptor))
