@@ -39,6 +39,28 @@ if(UNIX AND NOT(APPLE) AND NOT(QNXNTO) AND NOT(ANDROID))
     set(SHELL_EXECUTABLE ${BASH_EXECUTABLE})
     set(DOCKER_IMAGE_NAME "ubuntu:22.04")
 
+<<<<<<< HEAD
+=======
+    set(PROJECT_BINARY_DIR_COMPOSE_VOLUME "${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}")
+    set(fastcdr_LIB_DIR_COMPOSE_VOLUME "${fastcdr_LIB_DIR}:${fastcdr_LIB_DIR}")
+    set(CMAKE_INSTALL_PREFIX_COMPOSE_VOLUME "${CMAKE_INSTALL_PREFIX}:${CMAKE_INSTALL_PREFIX}")
+
+    set(PATH_ENVIRONMENT_VARIABLE_COMPOSE "LD_LIBRARY_PATH: ${PROJECT_BINARY_DIR}/src/cpp:${fastcdr_LIB_DIR}")
+    if (TINYXML2_LIB_DIR_COMPOSE_LD_LIBRARY_PATH)
+        set(PATH_ENVIRONMENT_VARIABLE_COMPOSE "${PATH_ENVIRONMENT_VARIABLE_COMPOSE}${TINYXML2_LIB_DIR_COMPOSE_LD_LIBRARY_PATH}")
+    endif()
+    set(EXAMPLE_PREFIX_DIR_COMPOSE "${PROJECT_BINARY_DIR}/examples/cpp")
+    set(EXAMPLE_SUFFIX_DIR_COMPOSE "")
+    set(FASTDDS_DEFAULT_PROFILES_FILE_PREFIX_COMPOSE "${PROJECT_BINARY_DIR}/examples/cpp")
+    set(COMMAND_EXAMPLE_DIR_PREFIX_COMPOSE "$\${EXAMPLE_DIR}")
+    set(COMMAND_CONCATENATE_COMPOSE "&")
+    set(COMMAND_BACKGROUND_JOB_COMPOSE "")
+
+    set(SUB_ADDITIONAL_ARGS_COMPOSE "$\${SUB_ADDITIONAL_ARGS_COMPOSE}")
+    set(PUB_ADDITIONAL_ARGS_COMPOSE "$\${PUB_ADDITIONAL_ARGS_COMPOSE}")
+    set(SPLIT_ARGS_COMPOSE "")
+
+>>>>>>> 0deeb148b (Add `flow_control`, `rtps`, `custom_payload_pool` and `content_filter` to windows example ci testing (#5480))
 # Windows configurations
 elseif(WIN32)
     # Find pwsh
@@ -53,16 +75,70 @@ elseif(WIN32)
     # We don't know which docker image to use for Windows yet
     message(FATAL_ERROR "Windows not supported yet")
 
+<<<<<<< HEAD
+=======
+    # Ensure drives inside docker are mounted in C: drive
+    string(REGEX REPLACE ".:" "C:" CMAKE_INSTALL_PREFIX_C ${CMAKE_INSTALL_PREFIX})
+    string(REGEX REPLACE ".:" "C:" PROJECT_BINARY_DIR_C ${PROJECT_BINARY_DIR})
+    string(REGEX REPLACE ".:" "C:" fastcdr_INSTALL_DIR_C ${fastcdr_INSTALL_DIR})
+
+    set(PROJECT_BINARY_DIR_COMPOSE_VOLUME "${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR_C}")
+    set(fastcdr_LIB_DIR_COMPOSE_VOLUME "${fastcdr_INSTALL_DIR}/bin:${fastcdr_INSTALL_DIR_C}/bin")
+    set(CMAKE_INSTALL_PREFIX_COMPOSE_VOLUME "${CMAKE_INSTALL_PREFIX}/bin:${CMAKE_INSTALL_PREFIX_C}/bin")
+
+    set(PATH_ENVIRONMENT_VARIABLE_COMPOSE "PATH: C:/Program Files/OpenSSL-Win64;${CMAKE_INSTALL_PREFIX_C}/bin;${fastcdr_INSTALL_DIR_C}/bin;C:/Windows/System32;C:/Windows/System32/downlevel;")
+    set(EXAMPLE_PREFIX_DIR_COMPOSE "${PROJECT_BINARY_DIR_C}/examples/cpp")
+    if (CMAKE_BUILD_TYPE)
+        set(EXAMPLE_SUFFIX_DIR_COMPOSE "${CMAKE_BUILD_TYPE}")
+    else()
+        set(EXAMPLE_SUFFIX_DIR_COMPOSE "Release")
+    endif()
+    set(FASTDDS_DEFAULT_PROFILES_FILE_PREFIX_COMPOSE "${PROJECT_BINARY_DIR_C}/examples/cpp")
+    set(COMMAND_EXAMPLE_DIR_PREFIX_COMPOSE "& $\$Env:EXAMPLE_DIR")
+    set(COMMAND_CONCATENATE_COMPOSE "&\" \"")
+    set(COMMAND_BACKGROUND_JOB_COMPOSE "; Receive-Job 1 -Wait")
+
+    set(SUB_ADDITIONAL_ARGS_COMPOSE "$\$Env:SUB_ADDITIONAL_ARGS_COMPOSE")
+    set(PUB_ADDITIONAL_ARGS_COMPOSE "$\$Env:PUB_ADDITIONAL_ARGS_COMPOSE")
+    set(SPLIT_ARGS_COMPOSE ".split(' ')")
+
+    set(WIN_DOCKERFILE ${CMAKE_CURRENT_LIST_DIR}/windows/Dockerfile)
+    # Generate image for testing
+    add_custom_target(
+        windows_docker_image_testing_generation
+        ALL
+        # Launch the docker build command using the build context.
+        COMMAND ${DOCKER_EXECUTABLE} build
+            --tag ${DOCKER_IMAGE_NAME}
+            --file ${WIN_DOCKERFILE}
+            ${CMAKE_CURRENT_LIST_DIR}
+        COMMENT "Creating windows image for testing..." VERBATIM
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+>>>>>>> 0deeb148b (Add `flow_control`, `rtps`, `custom_payload_pool` and `content_filter` to windows example ci testing (#5480))
 # Unsupported platform
 else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
 
+<<<<<<< HEAD
 # Configure TinyXML2 library path if installed in user library path
 if(NOT (TINYXML2_FROM_SOURCE OR TINYXML2_FROM_THIRDPARTY))
     get_filename_component(TINYXML2_LIB_DIR ${TINYXML2_LIBRARY} DIRECTORY)
     set(TINYXML2_LIB_DIR_COMPOSE_VOLUME "- ${TINYXML2_LIB_DIR}:${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/fastdds:ro")
     set(TINYXML2_LIB_DIR_COMPOSE_LD_LIBRARY_PATH ":${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/fastdds")
+=======
+if(WIN32)
+    # Temporarily, test hello world
+    file(GLOB examples_python_tests RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_custom_payload_pool.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_hello_world.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_rtps.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_control.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_content_filter.py)
+else()
+    # Find all pytest files for testing
+    file(GLOB examples_python_tests RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
+>>>>>>> 0deeb148b (Add `flow_control`, `rtps`, `custom_payload_pool` and `content_filter` to windows example ci testing (#5480))
 endif()
 
 # Find all pytest files for testing
