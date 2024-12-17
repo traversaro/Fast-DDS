@@ -121,10 +121,14 @@ jobs:
           workspace: ${{ github.workspace }}
 
       - name: Upload build workspace
-        uses: eProsima/eProsima-CI/external/upload-artifact@v0
+        uses: actions/upload-artifact@v4
         with:
           name: build_workspace_${{ inputs.label }}
-          path: ${{ github.workspace }}
+          include-hidden-files: true
+          path: |
+            ${{ github.workspace }}/install
+            ${{ github.workspace }}/build
+            ${{ github.workspace }}/**/*.obj
 
   reusable-windows-ci-test:
     runs-on: windows-2022
