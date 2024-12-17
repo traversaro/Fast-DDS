@@ -217,6 +217,11 @@ jobs:
           name: build_workspace_${{ inputs.label }}
           path: ${{ github.workspace }}
 
+      - name: Print directory structure (TODO remove)
+        shell: pwsh
+        run: |
+          ls
+
       - name: Test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-test') }}
         id: test
