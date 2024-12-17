@@ -19,7 +19,7 @@ jobs:
         test_filter:
           - 'blackbox'
           - 'unittest'
-    uses: eProsima/Fast-DDS/.github/workflows/reusable-windows-ci.yml@master
+    uses: eProsima/Fast-DDS/.github/workflows/reusable-windows-ci.yml@ci/split-test-mcompany
     with:
       label: nightly-sec-${{ matrix.security }}-${{ matrix.cmake_build_type }}-${{ matrix.test_filter }}-windows-ci-master
       cmake-config: ${{ matrix.cmake_build_type }}
