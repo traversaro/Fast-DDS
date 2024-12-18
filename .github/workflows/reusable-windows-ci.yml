@@ -221,7 +221,7 @@ jobs:
       - name: Print directory structure (TODO remove)
         shell: pwsh
         run: |
-          ls
+          ls -Recurse
 
       - name: Test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-test') }}
