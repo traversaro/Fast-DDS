@@ -197,9 +197,8 @@ public:
      * @param port The port of the Discovery Server
      * @param domain The domain id of the Discovery Server
      * @param use_env_var True if the environment variable should be used, false otherwise
-     * @return The PID of the Discovery Server in the background
      */
-    pid_t startServerInBackground(
+    void startServerInBackground(
             const uint16_t& port,
             const DomainId_t& domain,
             bool use_env_var);

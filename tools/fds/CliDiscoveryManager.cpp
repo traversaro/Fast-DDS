@@ -378,7 +378,7 @@ pid_t CliDiscoveryManager::getPidOfServer(
     return ret_value;
 }
 
-pid_t CliDiscoveryManager::startServerInBackground(
+void CliDiscoveryManager::startServerInBackground(
         const uint16_t& port,
         const DomainId_t& domain,
         bool use_env_var)
@@ -389,95 +389,73 @@ pid_t CliDiscoveryManager::startServerInBackground(
         addRemoteServersFromEnv(serverQos.wire_protocol().builtin.discovery_config.m_DiscoveryServers);
     }
 
-    pid_t pid = fork();
-    if (pid == -1)
+    // Create the server in the child process
+    pServer = DomainParticipantFactory::get_instance()->create_participant(0, serverQos);
+
+    if (nullptr == pServer)
     {
-        EPROSIMA_LOG_ERROR(CLI, "Error starting background process.");
-        return 0;
+        EPROSIMA_LOG_ERROR(CLI, "Server creation for Domain ID [" << domain << "] failed with the given settings.");
+        return;
     }
-    else if (pid == 0)
+
+    std::cout << "Server for Domain ID [" << domain << "] started on port " << port << std::endl;
+
+    std::unique_lock<std::mutex> lock(g_signal_mutex);
+    // Handle signal SIGINT for every thread
+    signal(SIGUSR1, sigint_handler);
+    signal(SIGUSR2, sigint_handler);
+    signal(SIGINT, sigint_handler);
+    signal(SIGTERM, sigint_handler);
+    signal(SIGQUIT, sigint_handler);
+    signal(SIGHUP, sigint_handler);
+
+
+    bool should_break = false;
+    while (!should_break)
     {
-        // Create the server in the child process
-        pServer = DomainParticipantFactory::get_instance()->create_participant(0, serverQos);
-
-        if (nullptr == pServer)
-        {
-            EPROSIMA_LOG_ERROR(CLI, "Server creation for Domain ID [" << domain << "] failed with the given settings.");
-            return 0;
-        }
-
-        std::cout << "Server for Domain ID [" << domain << "] started on port " << port << std::endl;
-
-        std::unique_lock<std::mutex> lock(g_signal_mutex);
-        // Handle signal SIGINT for every thread
-        signal(SIGUSR1, sigint_handler);
-        signal(SIGUSR2, sigint_handler);
-        signal(SIGINT, sigint_handler);
-        signal(SIGTERM, sigint_handler);
-        signal(SIGQUIT, sigint_handler);
-        signal(SIGHUP, sigint_handler);
-
-        if (chdir("/") != 0)
-        {
-            EPROSIMA_LOG_WARNING(CLI, "Failed to change working directory of background process.");
-        }
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-
-        bool should_break = false;
-        while (!should_break)
-        {
-            g_signal_cv.wait(lock, []
-                    {
-                        return 0 != g_signal_status;
-                    });
-            if (SIGUSR1 == g_signal_status)
-            {
-                // Update Qos
-                std::stringstream file_name;
-                file_name << intraprocess_dir_ << "/" << port << "_servers.txt";
-                rtps::LocatorList_t serverList;
-                load_environment_server_info(read_servers_from_file(file_name.str()), serverList);
-                for (rtps::Locator_t& locator : serverList)
+        g_signal_cv.wait(lock, []
                 {
-                    locator.kind = LOCATOR_KIND_TCPv4;
-                }
-                pServer->get_qos(serverQos);
-                serverQos.wire_protocol().builtin.discovery_config.m_DiscoveryServers = serverList;
-                pServer->set_qos(serverQos);
-                g_signal_status = 0;
-            }
-            else if (SIGUSR2 == g_signal_status)
+                    return 0 != g_signal_status;
+                });
+        if (SIGUSR1 == g_signal_status)
+        {
+            // Update Qos
+            std::stringstream file_name;
+            file_name << intraprocess_dir_ << "/" << port << "_servers.txt";
+            rtps::LocatorList_t serverList;
+            load_environment_server_info(read_servers_from_file(file_name.str()), serverList);
+            for (rtps::Locator_t& locator : serverList)
             {
-                DomainParticipantFactory::get_instance()->delete_participant(pServer);
-                std::stringstream file_name;
-                file_name << intraprocess_dir_ << "/" << port << "_servers.txt";
-                rtps::LocatorList_t serverList;
-                load_environment_server_info(read_servers_from_file(file_name.str()), serverList);
-                for (rtps::Locator_t& locator : serverList)
-                {
-                    locator.kind = LOCATOR_KIND_TCPv4;
-                }
-                serverQos.wire_protocol().builtin.discovery_config.m_DiscoveryServers = serverList;
-                pServer = DomainParticipantFactory::get_instance()->create_participant(0, serverQos);
-                g_signal_status = 0;
+                locator.kind = LOCATOR_KIND_TCPv4;
             }
-            else
+            pServer->get_qos(serverQos);
+            serverQos.wire_protocol().builtin.discovery_config.m_DiscoveryServers = serverList;
+            pServer->set_qos(serverQos);
+            g_signal_status = 0;
+        }
+        else if (SIGUSR2 == g_signal_status)
+        {
+            DomainParticipantFactory::get_instance()->delete_participant(pServer);
+            std::stringstream file_name;
+            file_name << intraprocess_dir_ << "/" << port << "_servers.txt";
+            rtps::LocatorList_t serverList;
+            load_environment_server_info(read_servers_from_file(file_name.str()), serverList);
+            for (rtps::Locator_t& locator : serverList)
             {
-                should_break = true;
+                locator.kind = LOCATOR_KIND_TCPv4;
             }
+            serverQos.wire_protocol().builtin.discovery_config.m_DiscoveryServers = serverList;
+            pServer = DomainParticipantFactory::get_instance()->create_participant(0, serverQos);
+            g_signal_status = 0;
+        }
+        else
+        {
+            should_break = true;
         }
         DomainParticipantFactory::get_instance()->delete_participant(pServer);
         exit(0);
     }
-    else
-    {
-        // TODO (Carlos): If the server creation takes longer than this sleep, the ERROR output will be shown
-        // in the same terminal as the user input but without waiting to return.
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-    return pid;
+    return;
 }
 
 #endif // ifndef _WIN32
