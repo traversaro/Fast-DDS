@@ -187,7 +187,7 @@ class Parser:
                 if not self.__is_daemon_running():
                     print('The Fast DDS daemon is not running.')
                     sys.exit(1)
-                print(client_cli.stop_request(domain, get_sig_idx(signal.SIGINT)))
+                print(client_cli.stop_request(domain, get_sig_idx(signal.SIGTERM)))
             elif command_int == command_to_int[Command.ADD]:
                 self.__start_daemon()
                 self.__add_remote_servers_to_args(args_for_cpp)
