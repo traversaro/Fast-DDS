@@ -21,5 +21,5 @@ jobs:
       label: 'nightly-sec-${{ matrix.security }}-windows-ci-master'
       cmake-config: ${{ matrix.cmake_build_type }}
       cmake-args: "-DSECURITY=${{ matrix.security }}"
-      ctest-args: "-LE xfail"
+      ctest-args: "-LE xfail -j 4"
       fastdds_branch: 'master'
