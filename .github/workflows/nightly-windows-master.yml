@@ -16,7 +16,7 @@ jobs:
         cmake_build_type:
           - 'Debug'
           - 'RelWithDebInfo'
-    uses: eProsima/Fast-DDS/.github/workflows/reusable-windows-ci.yml@master
+    uses: eProsima/Fast-DDS/.github/workflows/reusable-windows-ci.yml@ci/parallel_tests
     with:
       label: 'nightly-sec-${{ matrix.security }}-windows-ci-master'
       cmake-config: ${{ matrix.cmake_build_type }}
