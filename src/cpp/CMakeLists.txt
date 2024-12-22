@@ -400,7 +400,7 @@ try_run(SM_RUN_RESULT SM_COMPILE_RESULT
         RUN_OUTPUT_VARIABLE SM_RUN_OUTPUT)
 
 if(SM_COMPILE_RESULT AND NOT SM_RUN_RESULT)
-    string(STRIP ${SM_RUN_OUTPUT} SM_RUN_OUTPUT)
+    string(STRIP "${SM_RUN_OUTPUT}" SM_RUN_OUTPUT)
     message(STATUS "Framework's shared_mutex is ${SM_RUN_OUTPUT}")
 endif()
 
